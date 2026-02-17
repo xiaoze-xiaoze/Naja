@@ -1,0 +1,16 @@
+[package]
+name = "naja"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ndarray = "0.16"
+ndarray-stats = "0.6"
+
+faer = { version = "0.21", optional = true }
+argmin = { version = "0.10", optional = true }
+
+[features]
+default = []
+faer-backend = ["dep:faer"]
+argmin-solver = ["dep:argmin"]
