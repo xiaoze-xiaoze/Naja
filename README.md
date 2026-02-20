@@ -2,6 +2,66 @@
 
 Naja 是一个面向工程使用的 Rust 机器学习库，目标是在保持 Rust 风格与可维护性的前提下，为常见算法提供一致、可组合的 API。
 
+## 算法目录
+
+下面这 12 个尽量做到覆盖面均衡：
+
+1. Linear Regression（回归；支持 OLS/Ridge/Lasso/ElasticNet 等 penalty 选项）
+2. Logistic Regression（分类；支持 L2/L1/ElasticNet 等 penalty 选项）
+3. SVM（线性 SVM 起步；核函数作为扩展点）
+4. KNN（分类/回归）
+5. Naive Bayes（Gaussian/Multinomial/Bernoulli 作为同一算法的不同变体）
+6. Decision Tree（CART：分类/回归）
+7. Random Forest（分类/回归）
+8. XGBoost（先做 “XGBoost-style tree boosting” 子集：正则、学习率、子采样、列采样）
+9. KMeans（聚类）
+10. DBSCAN（密度聚类）
+11. Gaussian Mixture Model（GMM/EM；概率聚类与密度估计）
+12. LDA（Linear Discriminant Analysis：降维/分类，补足 PCA 之外的第二种降维路径）
+
+## 项目结构
+
+```
+Naja/
+├── Cargo.toml                         # crate 元信息与依赖
+├── src/
+│   ├── lib.rs                         # crate 入口；只做模块声明与公开导出
+│   ├── core/                          # 仅为算法服务的最小公共层（小而稳定）
+│   │   ├── mod.rs                     # core 入口；集中 re-export（给 algorithms 用）
+│   │   ├── error.rs                   # 错误类型与 Result
+│   │   ├── traits.rs                  # fit/predict/transform 等最小 trait
+│   │   ├── data/                      # Dataset + 基础数据校验工具
+│   │   │   ├── mod.rs
+│   │   │   ├── dataset.rs
+│   │   │   └── validate.rs
+│   │   └── compute/                   # ndarray/faer 的统一适配入口（不写数值算法）
+│   │       ├── mod.rs
+│   │       ├── types.rs
+│   │       └── ops.rs
+│   ├── preprocessing/                 # 标准化/归一化等最小 transformer
+│   │   ├── mod.rs
+│   ├── metrics/                       # 指标：分类/回归/聚类
+│   │   ├── mod.rs                     # metrics 模块入口
+│   │   ├── classification.rs          # 分类指标
+│   │   ├── regression.rs              # 回归指标
+│   │   └── clustering.rs              # 聚类指标
+│   └── algorithms/                    # 算法实现
+│       ├── mod.rs                     # algorithms 模块入口
+│       ├── linreg.rs
+│       ├── logreg.rs
+│       ├── svm.rs
+│       ├── knn.rs
+│       ├── nbayes.rs
+│       ├── dectree.rs
+│       ├── rforest.rs
+│       ├── xgboost.rs
+│       ├── kmeans.rs
+│       ├── dbscan.rs
+│       ├── gmm.rs
+│       └── lda.rs
+└── examples/
+```
+
 ## API 设计（4+1 阶段范式）
 
 Naja 采用统一的"4+1 阶段"范式，每个阶段职责明确、类型安全：
@@ -12,7 +72,7 @@ Naja 采用统一的"4+1 阶段"范式，每个阶段职责明确、类型安全
 | Configure | `configure(ConfigArgs {...})` | 配置超参数 | `Spec<T>` |
 | Solve | `solve(SolveArgs {...})` | 训练/求解 | `Solution<T>` |
 | Predict | `predict(&x)` / `transform(&x)` | 推理/变换 | 预测结果 |
-| **Inspect** | **`inspect(&data)`** | **诊断报告** | **`Report`** |
+| Inspect | `report()` | 训练报告 | `Report` |
 
 ### 核心设计原则
 
@@ -50,29 +110,10 @@ let solution = spec.solve(SolveArgs {
 // 阶段4: Predict - 推理
 let y_pred = solution.predict(&x_test)?;
 
-// 阶段5: Inspect - 生成分析报告
-let report = solution.inspect(&x_test, Some(&y_test))?;
-
-// 方式1: 直接打印 (简约风格)
-println!("{}", report); 
-
-/* 输出示例：
-Linear Regression Summary：
-Intercept: 0.0034
-Coefficients:
-  feat_0    : 0.4521
-  feat_1    : -0.0234
-R-squared   : 0.8921
-RMSE        : 0.1245
-*/
-
-// 方式2: 编程式访问 (自动化/集成)
-if let Some(r2) = report.r2 {
-    if r2 > 0.8 {
-        println!("Excellent model! Saving...");
-    }
-}
-println!("Intercept: {}", report.intercept); // 直接获取字段
+// 阶段5: Inspect - 查看训练报告
+let report = solution.report()?;
+println!("{}", report);
+println!("R2 Score: {}", report.r2_score);
 ```
 
 ### 监督学习（分类）示例
@@ -149,70 +190,7 @@ let y_pred = solution.predict(&x_test)?;
 - `configure(ConfigArgs {...})`：纯配置阶段，返回 `Spec<T>`
 - `solve(SolveArgs {...})`：纯训练阶段，返回 `Solution<T>`
 - `predict(&x)` / `transform(&x)`：纯推理阶段
-- `inspect(&data)`：纯诊断阶段，返回可打印的报告对象，不污染核心计算逻辑。
-
-后续如果需要训练过程信息（迭代次数、是否收敛、最终 loss 等），建议以 `solution.report()` 形式扩展，而不是把报告字段塞进 `Spec` 或 `Solution`，避免职责混淆。
-
-## 算法目录
-
-下面这 12 个尽量做到覆盖面均衡：
-
-1. Linear Regression（回归；支持 OLS/Ridge/Lasso/ElasticNet 等 penalty 选项）
-2. Logistic Regression（分类；支持 L2/L1/ElasticNet 等 penalty 选项）
-3. SVM（线性 SVM 起步；核函数作为扩展点）
-4. KNN（分类/回归）
-5. Naive Bayes（Gaussian/Multinomial/Bernoulli 作为同一算法的不同变体）
-6. Decision Tree（CART：分类/回归）
-7. Random Forest（分类/回归）
-8. XGBoost（先做 “XGBoost-style tree boosting” 子集：正则、学习率、子采样、列采样）
-9. KMeans（聚类）
-10. DBSCAN（密度聚类）
-11. Gaussian Mixture Model（GMM/EM；概率聚类与密度估计）
-12. LDA（Linear Discriminant Analysis：降维/分类，补足 PCA 之外的第二种降维路径）
-
-## 项目结构
-
-```
-Naja/
-├── Cargo.toml                         # crate 元信息与依赖
-├── src/
-│   ├── lib.rs                         # crate 入口；只做模块声明与公开导出
-│   ├── core/                          # 仅为算法服务的最小公共层（小而稳定）
-│   │   ├── mod.rs                     # core 入口；集中 re-export（给 algorithms 用）
-│   │   ├── error.rs                   # 错误类型与 Result
-│   │   ├── traits.rs                  # fit/predict/transform 等最小 trait
-│   │   ├── data/                      # Dataset + 基础数据校验工具
-│   │   │   ├── mod.rs
-│   │   │   ├── dataset.rs
-│   │   │   └── validate.rs
-│   │   └── compute/                   # ndarray/faer 的统一适配入口（不写数值算法）
-│   │       ├── mod.rs
-│   │       ├── types.rs
-│   │       └── ops.rs
-│   ├── preprocessing/                 # 标准化/归一化等最小 transformer
-│   │   ├── mod.rs
-│   ├── metrics/                       # 指标：分类/回归/聚类
-│   │   ├── mod.rs                     # metrics 模块入口
-│   │   ├── classification.rs          # 分类指标
-│   │   ├── regression.rs              # 回归指标
-│   │   └── clustering.rs              # 聚类指标
-│   └── algorithms/                    # 算法实现
-│       ├── mod.rs                     # algorithms 模块入口
-│       ├── linreg.rs
-│       ├── logreg.rs
-│       ├── svm.rs
-│       ├── knn.rs
-│       ├── nbayes.rs
-│       ├── dectree.rs
-│       ├── rforest.rs
-│       ├── xgboost.rs
-│       ├── kmeans.rs
-│       ├── dbscan.rs
-│       ├── gmm.rs
-│       └── lda.rs
-├── examples/
-└── tests/
-```
+- `report()`：查看训练报告（如迭代次数、收敛情况、最终 Loss 等），具体格式待定。
 
 ## core::compute（ops.rs 运算清单）
 
@@ -346,6 +324,49 @@ Naja/
     *   **含义**: 求解过定方程组的最小二乘解（QR 分解）。
     *   **用途**: 直接求解线性回归，无需构造 $X^T X$（数值上更稳定）。
 
+## core::regularization（正则化模块）
+
+`core::regularization` 提供了统一的正则化接口，用于在损失函数中添加惩罚项，以防止过拟合。通过枚举 `Penalty`，算法可以轻松支持 None, Ridge (L2), Lasso (L1) 等多种模式。
+
+### 1. 正则化类型 (Penalty Types)
+
+*   **Ridge (L2 Regularization)**
+    *   **公式**: $$ R(w) = \frac{1}{2} \alpha ||w||_2^2 = \frac{1}{2} \alpha \sum w_j^2 $$
+    *   **含义**: 对权重的平方和进行惩罚（L2 范数）。
+    *   **用途**: 防止模型过拟合，处理多重共线性问题。倾向于使权重普遍变小，但不会变为 0。
+
+*   **Lasso (L1 Regularization)**
+    *   **公式**: $$ R(w) = \alpha ||w||_1 = \alpha \sum |w_j| $$
+    *   **含义**: 对权重的绝对值和进行惩罚（L1 范数）。
+    *   **用途**: 特征选择。倾向于产生稀疏解（Sparse Solution），即自动将不重要的特征权重置为 0。
+
+### 2. 核心运算 (Core Operations)
+
+*   **loss**
+    *   **签名**: `fn loss(&self, w: ArrayView1<f64>) -> f64`
+    *   **含义**: 计算当前权重向量 $w$ 对应的正则化损失值。
+    *   **用途**: 计算总 Loss 时调用。
+
+*   **gradient**
+    *   **签名**: `fn gradient(&self, w: ArrayView1<f64>) -> Array1<f64>`
+    *   **含义**: 计算正则化项关于权重 $w$ 的梯度。
+    *   **公式**:
+        *   Ridge: $\alpha \cdot w$
+        *   Lasso: $\alpha \cdot \text{sign}(w)$
+    *   **用途**: 梯度下降法 (Gradient Descent) 中更新权重。
+
+*   **apply_l2**
+    *   **签名**: `fn apply_l2(&self, xtx: &mut Array2<f64>, intercept: bool)`
+    *   **含义**: 将 L2 正则项应用到 $X^T X$ 矩阵上（即 $X^T X + \alpha I$）。
+    *   **细节**: 如果 `intercept` 为 true，会跳过第一个对角元素（不对截距项进行正则化）。
+    *   **用途**: 闭式解 (Closed-form) 求解 Ridge Regression。
+
+*   **apply_l1**
+    *   **签名**: `fn apply_l1(&self, z: f64) -> f64`
+    *   **含义**: 应用 L1 正则化的**软阈值算子 (Soft Thresholding Operator)**。
+    *   **公式**: $S(z, \alpha) = \text{sign}(z) \cdot (|z| - \alpha)_+$
+    *   **用途**: 坐标下降法 (Coordinate Descent) 求解 Lasso Regression。
+
 ## Metrics 指标库
 
 位于 `src/metrics` 模块，提供了一系列标准的评估指标，用于衡量模型的性能。所有指标函数均经过输入校验（如维度一致性、非空检查），并统一返回 `core::Result<f64>`。
@@ -413,3 +434,58 @@ Naja/
         *   **接近 -1**: 样本 $i$ 距离同簇远，距离异簇近。样本可能被错误地分配到了当前簇。
     *   **用途**: 评估聚类的致密性和分离度，无需真实标签。常用于寻找 KMeans 中的最佳 $k$ 值（Elbow Method 的替代或补充）。
     *   **注意**: 计算复杂度为 $O(N^2)$，数据量较大时计算会非常慢。
+
+## 线性回归 (Linear Regression)
+
+线性回归是最基础的回归模型，用于预测连续目标变量 $y$ 与特征 $X$ 之间的线性关系。
+
+### 数学模型
+$$ y = Xw + b + \epsilon $$
+其中 $w$ 是权重向量，$b$ 是截距（bias/intercept）。
+
+### 配置参数 (ConfigArgs)
+
+*   **intercept**: `bool` (默认 `true`)
+    *   是否拟合截距项 $b$。
+*   **penalty**: `Penalty` (默认 `None`)
+    *   正则化类型：`None` (OLS), `Ridge`, `Lasso`。
+*   **max_iter**: `usize` (默认 `1000`)
+    *   最大迭代次数，仅用于 Lasso 求解。
+*   **tol**: `f64` (默认 `1e-4`)
+    *   收敛容差，仅用于 Lasso 求解。
+
+### 求解策略 (Implementation Details)
+
+根据 `penalty` 的不同，采用不同的求解器：
+
+#### 1. 闭式解 (Closed-form Solver)
+**适用场景**: `Penalty::None` (OLS) 和 `Penalty::Ridge`。
+**原理**: 此时目标函数是二次凸函数，存在解析解。
+$$ w = (X^T X + \alpha I)^{-1} X^T y $$
+**实现步骤**:
+1.  计算 $X^T X$ 和 $X^T y$。
+2.  如果是 Ridge，向 $X^T X$ 的对角线加入 $\alpha$ (调用 `apply_l2`)。
+3.  使用 Cholesky 分解求解线性方程组（比直接求逆更稳定）。
+
+#### 2. 坐标下降法 (Coordinate Descent Solver)
+
+**适用场景**: `Penalty::Lasso`。
+
+**原理**: 由于 L1 正则项 $|w|_1$ 在零点不可导，无法使用梯度下降或闭式解。坐标下降法利用 L1 正则项的可分离性，每次固定其他维度，只优化一个 $w_j$。
+
+**算法流程 (Algorithm Steps)**:
+
+1.  **初始化**: 权重 $w = 0$，残差 $r = y$。
+2.  **迭代优化**: 对每个特征 $j$ (从 1 到 $p$) 循环执行：
+    *   **计算相关性 (Correlation)**: 计算特征 $x_j$ 与当前**部分残差 (Partial Residual)** 的内积 $\rho_j$。
+        $$ \rho_j = x_j^T (y - \sum_{k \neq j} x_k w_k) = x_j^T r + w_j^{(old)} ||x_j||^2 $$
+        *注意：代码实现中直接利用当前残差 $r$ 和旧权重 $w_j^{(old)}$ 快速计算，无需重新求和。*
+    *   **软阈值更新 (Soft Thresholding)**:
+        $$ w_j^{(new)} = \frac{S(\rho_j, \alpha)}{||x_j||^2} $$
+        其中 $S(z, \alpha)$ 是软阈值算子：
+        $$ S(z, \alpha) = \begin{cases} z - \alpha & \text{if } z > \alpha \\ z + \alpha & \text{if } z < -\alpha \\ 0 & \text{if } |z| \le \alpha \end{cases} $$
+        *这一步是 Lasso 产生稀疏解的关键：当相关性 $\rho_j$ 小于正则化强度 $\alpha$ 时，权重会被直接置为 0。*
+    *   **残差更新 (Residual Update)**:
+        $$ r \leftarrow r - (w_j^{(new)} - w_j^{(old)}) x_j $$
+        *实时维护残差向量，避免了 $O(N \cdot P)$ 的矩阵乘法，将复杂度降为 $O(N)$。*
+3.  **收敛判断**: 记录本轮迭代中权重的最大变化量 `max_change`。若 `max_change < tol` 或达到 `max_iter`，则停止。
