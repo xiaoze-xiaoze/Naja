@@ -1,4 +1,4 @@
-use naja::algorithms::linreg::LinearRegression;
+use naja::algorithms::linrg::LinearRegression;
 use naja::core::regularization::Penalty;
 use naja::core::traits::FitSupervised;
 use ndarray::{Array1, Array2};

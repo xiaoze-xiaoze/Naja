@@ -50,8 +50,8 @@ Naja/
 │   │   └── clustering.rs              # 聚类指标
 │   └── algorithms/                    # 算法实现
 │       ├── mod.rs                     
-│       ├── linreg.rs
-│       ├── logreg.rs
+│       ├── linrg.rs
+│       ├── logrg.rs
 │       ├── svm.rs
 │       ├── knn.rs
 │       ├── nbayes.rs

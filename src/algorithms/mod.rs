@@ -1,1 +1,1 @@
-pub mod linreg;
+pub mod linrg;
