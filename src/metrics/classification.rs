@@ -1,4 +1,4 @@
-use crate::core::{Result, Error};
+use crate::core::Result;
 use crate::core::compute::types::{VectorView};
 use crate::core::compute::ops::{ensure_len, ensure_nonempty_vec};
 

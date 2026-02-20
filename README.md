@@ -32,29 +32,32 @@ Naja/
 │   │   ├── traits.rs                  # fit/predict/transform 等最小 trait
 │   │   ├── data/                      # Dataset + 基础数据校验工具
 │   │   │   ├── mod.rs
-│   │   │   ├── dataset.rs
-│   │   │   └── validate.rs
+│   │   │   └── dataset.rs
 │   │   └── compute/                   # ndarray/faer 的统一适配入口（不写数值算法）
 │   │       ├── mod.rs
 │   │       ├── types.rs
 │   │       └── ops.rs
-│   ├── preprocessing/                 # 标准化/归一化等最小 transformer
+│   ├── preprocessing/                 # 数据预处理
 │   │   ├── mod.rs
+│   │   └── scaler.rs                  # 标准化/归一化等 transformer
+│   ├── io/                            # 模型导入导出 (ONNX 等)
+│   │   ├── mod.rs
+│   │   └── onnx.rs
 │   ├── metrics/                       # 指标：分类/回归/聚类
 │   │   ├── mod.rs                     # metrics 模块入口
 │   │   ├── classification.rs          # 分类指标
 │   │   ├── regression.rs              # 回归指标
 │   │   └── clustering.rs              # 聚类指标
 │   └── algorithms/                    # 算法实现
-│       ├── mod.rs                     # algorithms 模块入口
+│       ├── mod.rs                     
 │       ├── linreg.rs
 │       ├── logreg.rs
 │       ├── svm.rs
 │       ├── knn.rs
 │       ├── nbayes.rs
-│       ├── dectree.rs
-│       ├── rforest.rs
-│       ├── xgboost.rs
+│       ├── dtree.rs
+│       ├── ranfo.rs
+│       ├── xgb.rs
 │       ├── kmeans.rs
 │       ├── dbscan.rs
 │       ├── gmm.rs
@@ -64,23 +67,21 @@ Naja/
 
 ## API 设计（4+1 阶段范式）
 
-Naja 采用统一的"4+1 阶段"范式，每个阶段职责明确、类型安全：
+Naja 采用统一的"4+1 阶段"范式，但通过 **Builder 模式** 简化了配置过程，使得代码更加流畅且符合直觉：
 
 | 阶段 | 方法 | 职责 | 输出类型 |
 |------|------|------|----------|
-| Define | `new()` | 创建模型实例 | `Model<T>` |
-| Configure | `configure(ConfigArgs {...})` | 配置超参数 | `Spec<T>` |
-| Solve | `solve(SolveArgs {...})` | 训练/求解 | `Solution<T>` |
+| Define & Configure | `Model::new().param(...)` | 创建模型并链式配置超参数 | `Model` |
+| Solve | `solve(SolveArgs {...})` / `fit(&x, &y)` | 训练/求解 | `Solution<T>` |
 | Predict | `predict(&x)` / `transform(&x)` | 推理/变换 | 预测结果 |
-| Inspect | `report()` | 训练报告 | `Report` |
+| Inspect | `report()` | 查看训练报告 | `Result<&Report>` |
 
 ### 核心设计原则
 
-1. **阶段显式**：每个阶段一个入口方法，参数封装在结构体中
-2. **类型安全**：未 `solve` 的模型无法 `predict`（编译期保证）
-3. **命名参数**：使用结构体初始化语法，参数含义一目了然
-4. **变量统一**：可全程使用同一变量名（shadowing），或按阶段区分
-5. **纯文本报告**：Inspect 阶段返回的 Report 包含关键统计量和格式化信息的对象，直接打印即可获得人类可读的分析报告。
+1.  **Fluent Builder**: 不再需要单独的 `ConfigArgs` 结构体，直接在模型对象上链式调用方法修改配置。
+2.  **隐式默认值**: `Model::new()` 创建的对象自带合理的默认配置，用户只需修改关心的参数。
+3.  **类型安全**: 未 `solve` 的模型无法 `predict`（编译期保证）。
+4.  **纯文本报告**: Inspect 阶段返回的 Report 包含关键统计量和格式化信息的对象，直接打印即可获得人类可读的分析报告。
 
 ### 输入与输出约定
 
@@ -91,45 +92,25 @@ Naja 采用统一的"4+1 阶段"范式，每个阶段职责明确、类型安全
 ### 监督学习（回归）示例
 
 ```rust
-// 阶段1: Define - 创建模型
-let model = LinearRegression::new();
+let model = LinearRegression::new()
+    .intercept(true)
+    .penalty(Penalty::Ridge { alpha: 1e-2 });
 
-// 阶段2: Configure - 配置超参数
-let spec = model.configure(ConfigArgs {
-    intercept: true,
-    penalty: Penalty::Ridge { alpha: 1e-2 },
-});
-
-// 阶段3: Solve - 训练求解
-let solution = spec.solve(SolveArgs {
+let solution = model.solve(SolveArgs {
     x: &x_train,
     y: &y_train,
-    solver: Solver::Auto,
 })?;
 
-// 阶段4: Predict - 推理
 let y_pred = solution.predict(&x_test)?;
-
-// 阶段5: Inspect - 查看训练报告
-let report = solution.report()?;
-println!("{}", report);
-println!("R2 Score: {}", report.r2_score);
 ```
 
 ### 监督学习（分类）示例
 
 ```rust
-let model = LogisticRegression::new();
+let model = LogisticRegression::new()
+    .penalty(Penalty::L2 { alpha: 1e-2 });
 
-let spec = model.configure(ConfigArgs {
-    penalty: Penalty::L2 { alpha: 1e-2 },
-});
-
-let solution = spec.solve(SolveArgs {
-    x: &x_train,
-    y: &y_train,
-    solver: Solver::Auto,
-})?;
+let solution = model.fit(&x_train, &y_train)?;
 
 let proba = solution.predict_proba(&x_test)?;
 let y_hat = solution.predict(&x_test)?;
@@ -138,17 +119,11 @@ let y_hat = solution.predict(&x_test)?;
 ### 非监督学习（聚类）示例
 
 ```rust
-let model = KMeans::new();
+let model = KMeans::new()
+    .k(8)
+    .max_iter(300);
 
-let spec = model.configure(ConfigArgs {
-    k: 8,
-    max_iter: 300,
-});
-
-let solution = spec.solve(SolveArgs {
-    x: &x,
-    solver: Solver::Auto,
-})?;
+let solution = model.fit(&x)?;
 
 let labels = solution.predict(&x)?;
 ```
@@ -156,41 +131,23 @@ let labels = solution.predict(&x)?;
 ### Transformer 示例
 
 ```rust
-let model = StandardScaler::new();
+let model = StandardScaler::new()
+    .with_mean(true)
+    .with_std(true);
 
-let spec = model.configure(ConfigArgs {
-    with_mean: true,
-    with_std: true,
-});
-
-let solution = spec.solve(SolveArgs {
-    x: &x_train,
-});
+let solution = model.fit(&x_train)?;
 
 let x_train_scaled = solution.transform(&x_train)?;
 let x_test_scaled = solution.transform(&x_test)?;
 ```
 
-### 简写形式（熟练用户）
-
-对于简单场景，可利用链式调用和 shadowing 压缩代码：
-
-```rust
-let model = LinearRegression::new()
-    .configure(ConfigArgs { intercept: true, penalty: Penalty::None });
-
-let solution = model.solve(SolveArgs { x: &x_train, y: &y_train, solver: Solver::Auto })?;
-
-let y_pred = solution.predict(&x_test)?;
-```
-
 ### 命名与职责边界（长期稳定）
 
-- `Model::new()`：创建默认实例，不携带任何配置
-- `configure(ConfigArgs {...})`：纯配置阶段，返回 `Spec<T>`
-- `solve(SolveArgs {...})`：纯训练阶段，返回 `Solution<T>`
+- `Model::new()`：创建默认配置实例
+- `Model::param(val)`：链式修改配置，返回 `Self`
+- `solve(SolveArgs {...})` / `fit(...)`：纯训练阶段，返回 `Solution<T>`
 - `predict(&x)` / `transform(&x)`：纯推理阶段
-- `report()`：查看训练报告（如迭代次数、收敛情况、最终 Loss 等），具体格式待定。
+- `report()`：查看训练报告（如迭代次数、收敛情况、最终 Loss 等）。
 
 ## core::compute（ops.rs 运算清单）
 
@@ -489,3 +446,17 @@ $$ w = (X^T X + \alpha I)^{-1} X^T y $$
         $$ r \leftarrow r - (w_j^{(new)} - w_j^{(old)}) x_j $$
         *实时维护残差向量，避免了 $O(N \cdot P)$ 的矩阵乘法，将复杂度降为 $O(N)$。*
 3.  **收敛判断**: 记录本轮迭代中权重的最大变化量 `max_change`。若 `max_change < tol` 或达到 `max_iter`，则停止。
+
+## Model Export (ONNX)
+
+Naja 计划支持将训练好的模型导出为标准 ONNX 格式，以便在其他推理引擎（如 ONNX Runtime, TensorRT）中部署。
+
+### 预期 API
+
+```rust
+// 导出模型
+model.save_onnx("model.onnx")?;
+```
+
+### 当前状态
+*   `src/io/onnx.rs`: 预留模块，待实现。

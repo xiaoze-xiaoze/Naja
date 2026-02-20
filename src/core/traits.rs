@@ -9,7 +9,7 @@ pub trait Transformer { fn transform(&self, x: MatrixView<'_>) -> Result<Matrix>
 
 pub trait InverseTransformer { fn inverse_transform(&self, x: MatrixView<'_>) -> Result<Matrix>; }
 
-pub trait Fit {
+pub trait FitSupervised {
     type Object;
     fn fit(&self, x: MatrixView<'_>, y: VectorView<'_>) -> Result<Self::Object>;
 }

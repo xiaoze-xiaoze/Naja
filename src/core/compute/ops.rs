@@ -1,6 +1,8 @@
 use ndarray::{s, Array1, Array2, Zip};
 use crate::core::{Error, Result};
 use super::types::{Matrix, MatrixView, Vector, VectorView};
+#[cfg(feature = "faer-backend")]
+use faer::linalg::solvers::Solve;
 
 pub fn all_finite_vec(v: VectorView<'_>) -> bool { v.iter().all(|x| x.is_finite()) }
 
@@ -33,7 +35,6 @@ pub fn ensure_gemv(a: MatrixView<'_>, x: VectorView<'_>) -> Result<()> {
 
 pub fn add_intercept(x: MatrixView<'_>) -> Result<Matrix> {
     ensure_nonempty_mat(x)?;
-    let x = x.to_owned();
     let n = x.nrows();
     let p = x.ncols();
     let mut out = Array2::<f64>::zeros((n, p + 1));
@@ -43,7 +44,7 @@ pub fn add_intercept(x: MatrixView<'_>) -> Result<Matrix> {
 }
 
 pub fn add_diag_mut(a: &mut Matrix, alpha: f64) -> Result<()> {
-    if !alpha.is_finite() { return Err(Error::invalid_param("alpha", "alpha must be finite")); }
+    if !alpha.is_finite() { return Err(Error::invalid_param("alpha", "must be finite")); }
     ensure_nonempty_mat(a.view())?;
     if a.nrows() != a.ncols() { return Err(Error::invalid_shape(format!("add_diag_mut requires square matrix, got {}x{}", a.nrows(), a.ncols()))); }
     let n = a.nrows();
@@ -66,7 +67,7 @@ pub fn l2(v: VectorView<'_>) -> Result<f64> { Ok(l2_sq(v)?.sqrt()) }
 
 pub fn add_scaled_mut(dst: &mut Vector, src: VectorView<'_>, alpha: f64) -> Result<()> {
     if !alpha.is_finite() {
-        return Err(Error::invalid_param("alpha", "alpha must be finite"));
+        return Err(Error::invalid_param("alpha", "must be finite"));
     }
     ensure_nonempty_vec(dst.view())?;
     ensure_len(dst.view(), src, "dst", "src")?;
@@ -118,7 +119,7 @@ pub fn col_mean(x: MatrixView<'_>) -> Result<Vector> {
 pub fn col_var(x: MatrixView<'_>, ddof: usize) -> Result<Vector> {
     ensure_nonempty_mat(x)?;
     let n = x.nrows();
-    if ddof >= n { return Err(Error::invalid_param("ddof", format!("ddof must be < nrows (ddof={ddof}, nrows={n})"))); }
+    if ddof >= n { return Err(Error::invalid_param("ddof", format!("must be < nrows (ddof={ddof}, nrows={n})"))); }
     let mean = col_mean(x)?;
     let denom = (n - ddof) as f64;
     let mut out = Array1::<f64>::zeros(x.ncols());
@@ -169,7 +170,7 @@ pub fn log1pexp(x: f64) -> f64 {
 
 pub fn logsumexp(v: VectorView<'_>) -> Result<f64> {
     ensure_nonempty_vec(v)?;
-    if !all_finite_vec(v) { return Err(Error::non_finite("v")); }
+    if !all_finite_vec(v) { return Err(Error::invalid_param("v", "contains non-finite values")); }
     let m = v.iter().copied().fold(f64::NEG_INFINITY, |acc, x| acc.max(x));
     let sum: f64 = v.iter().map(|&x| (x - m).exp()).sum();
     Ok(m + sum.ln())
@@ -177,7 +178,7 @@ pub fn logsumexp(v: VectorView<'_>) -> Result<f64> {
 
 pub fn softmax_mut(v: &mut Vector) -> Result<()> {
     ensure_nonempty_vec(v.view())?;
-    if !all_finite_vec(v.view()) { return Err(Error::non_finite("v")); }
+    if !all_finite_vec(v.view()) { return Err(Error::invalid_param("v", "contains non-finite values")); }
     let lse = logsumexp(v.view())?;
     v.mapv_inplace(|x| (x - lse).exp());
     Ok(())
@@ -185,7 +186,7 @@ pub fn softmax_mut(v: &mut Vector) -> Result<()> {
 
 pub fn argmax(v: VectorView<'_>) -> Result<usize> {
     ensure_nonempty_vec(v)?;
-    if !all_finite_vec(v) { return Err(Error::non_finite("v")); }
+    if !all_finite_vec(v) { return Err(Error::invalid_param("v", "contains non-finite values")); }
     let mut best_i = 0usize;
     let mut best_v = v[0];
     for (i, &x) in v.iter().enumerate().skip(1) {
@@ -207,7 +208,7 @@ fn to_faer_col_mat(b: VectorView<'_>) -> faer::Mat<f64> { faer::Mat::from_fn(b.l
 fn from_faer_col_mat(x: faer::Mat<f64>) -> Vector {
     let n = x.nrows();
     let mut out = Array1::<f64>::zeros(n);
-    for i in 0..n { out[i] = x.read(i, 0); }
+    for i in 0..n { out[i] = x[(i, 0)]; }
     out
 }
 
@@ -255,6 +256,6 @@ pub fn solve_lstsq(a: MatrixView<'_>, b: VectorView<'_>) -> Result<Vector> {
     let a_f = to_faer_mat(a);
     let b_f = to_faer_col_mat(b);
     let qr = a_f.qr();
-    let x_f = qr.solve_lstsq(&b_f);
+    let x_f = qr.solve(&b_f);
     Ok(from_faer_col_mat(x_f))
 }

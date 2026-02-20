@@ -1,6 +1,6 @@
 use crate::core::{Result, Error};
 use crate::core::compute::types::{VectorView};
-use crate::core::compute::ops::{ensure_len, ensure_nonempty_vec, l2_sq};
+use crate::core::compute::ops::{ensure_len, ensure_nonempty_vec};
 
 pub fn mse(y_true: VectorView<'_>, y_pred: VectorView<'_>) -> Result<f64> {
     ensure_nonempty_vec(y_true)?;

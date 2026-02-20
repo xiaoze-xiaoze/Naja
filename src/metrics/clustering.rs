@@ -1,6 +1,6 @@
 use crate::core::{Result, Error};
 use crate::core::compute::types::{MatrixView, VectorView};
-use crate::core::compute::ops::{ensure_nonempty_mat, ensure_nonempty_vec, ensure_len};
+use crate::core::compute::ops::{ensure_nonempty_mat, ensure_nonempty_vec};
 
 pub fn silhouette_score(x: MatrixView<'_>, labels: VectorView<'_>) -> Result<f64> {
     ensure_nonempty_mat(x)?;
