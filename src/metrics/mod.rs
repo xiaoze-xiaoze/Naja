@@ -1,7 +1,7 @@
-pub mod regression;
-pub mod classification;
-pub mod clustering;
+pub mod regressor;
+pub mod classifier;
+pub mod clusterer;
 
-pub use regression::*;
-pub use classification::*;
-pub use clustering::*;
+pub use regressor::*;
+pub use classifier::*;
+pub use clusterer::*;

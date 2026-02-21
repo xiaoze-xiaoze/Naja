@@ -1,7 +1,10 @@
 use ndarray::{Array1, Axis};
-use crate::core::compute::types::Matrix;
-use super::{Transformer, Unfitted, Fitted};
+use crate::core::compute::types::{Matrix, MatrixView};
+use crate::core::traits::{InverseTransformer, Transformer};
+use crate::core::Result;
+use super::{Unfitted, Fitted};
 
+#[derive(Debug, Clone)]
 pub struct StandardScaler<S = Unfitted> { state: S }
 
 impl StandardScaler<Unfitted> {
@@ -20,9 +23,19 @@ impl Default for StandardScaler<Unfitted> {
 }
 
 impl Transformer for StandardScaler<Fitted> {
-    fn transform(&self, data: &Matrix) -> Matrix { (data - &self.state.mean) / &self.state.std }
+    fn transform(&self, data: MatrixView<'_>) -> Result<Matrix> { 
+        let mut out = data.to_owned();
+        out -= &self.state.mean;
+        out /= &self.state.std;
+        Ok(out)
+    }
 }
 
-impl StandardScaler<Fitted> {
-    pub fn inverse_transform(&self, data: &Matrix) -> Matrix { (data * &self.state.std) + &self.state.mean }
+impl InverseTransformer for StandardScaler<Fitted> {
+    fn inverse_transform(&self, data: MatrixView<'_>) -> Result<Matrix> { 
+        let mut out = data.to_owned();
+        out *= &self.state.std;
+        out += &self.state.mean;
+        Ok(out)
+    }
 }
