@@ -32,7 +32,7 @@
     *   **用途**: 作为预处理入口
 
 *   **StandardScaler<Unfitted>::fit**
-    *   **签名**: `fn fit(self, data: &Matrix) -> StandardScaler<Fitted>`
+    *   **签名**: `fn fit(self, data: MatrixView<'_>) -> StandardScaler<Fitted>`
     *   **含义**: 计算 `mean/std`
     *   **用途**: 生成可变换的已拟合对象
 
@@ -53,7 +53,7 @@ use naja::preprocessing::StandardScaler;
 use naja::core::traits::{Transformer, InverseTransformer};
 
 let scaler = StandardScaler::new();
-let fitted = scaler.fit(&x_train);
+let fitted = scaler.fit(x_train.view());
 let x_train_scaled = fitted.transform(x_train.view())?;
 let x_test_scaled = fitted.transform(x_test.view())?;
 let x_train_back = fitted.inverse_transform(x_train_scaled.view())?;
