@@ -81,10 +81,7 @@ fn main() {
     println!("{:>6} {:>12} {:>12} {:>12} {:>12}", "Index", "True", "OLS", "Ridge", "Lasso");
     println!("{}", "─".repeat(58));
     for i in 0..5.min(n_features) {
-        println!(
-            "{:>6} {:>12.6} {:>12.6} {:>12.6} {:>12.6}",
-            i, true_coeffs[i], ols.coefficients[i], ridge.coefficients[i], lasso.coefficients[i]
-        );
+        println!("{:>6} {:>12.6} {:>12.6} {:>12.6} {:>12.6}", i, true_coeffs[i], ols.coefficients[i], ridge.coefficients[i], lasso.coefficients[i]);
     }
     println!("{}\n", "─".repeat(58));
 
