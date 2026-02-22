@@ -240,18 +240,8 @@ pub fn solve_cholesky(_a: MatrixView<'_>, _b: VectorView<'_>) -> Result<Vector> 
 #[cfg(not(feature = "faer-backend"))]
 pub fn solve_lstsq(_a: MatrixView<'_>, _b: VectorView<'_>) -> Result<Vector> { Err(Error::backend_unavailable("faer-backend", "enable feature `faer-backend` to use solve_lstsq")) }
 
-#[cfg(feature = "faer-backend")]
-pub fn solve_lu(a: MatrixView<'_>, b: VectorView<'_>) -> Result<Vector> {
-    ensure_nonempty_mat(a)?;
-    ensure_nonempty_vec(b)?;
-    ensure_square(a)?;
-    ensure_rows_match(a, b)?;
-    let a_f = to_faer_mat(a);
-    let b_f = to_faer_col_mat(b);
-    let plu = a_f.partial_piv_lu();
-    let x_f = plu.solve(&b_f);
-    Ok(from_faer_col_mat(x_f))
-}
+#[cfg(not(feature = "faer-backend"))]
+pub fn solve_svd(_a: MatrixView<'_>, _b: VectorView<'_>) -> Result<Vector> { Err(Error::backend_unavailable("faer-backend", "enable feature `faer-backend` to use solve_svd")) }
 
 #[cfg(feature = "faer-backend")]
 pub fn solve_cholesky(a: MatrixView<'_>, b: VectorView<'_>) -> Result<Vector> {
@@ -263,6 +253,36 @@ pub fn solve_cholesky(a: MatrixView<'_>, b: VectorView<'_>) -> Result<Vector> {
     let b_f = to_faer_col_mat(b);
     let llt = a_f.llt(faer::Side::Lower).map_err(|_| Error::lin_alg("cholesky failed: matrix may not be SPD"))?;
     let x_f = llt.solve(&b_f);
+    Ok(from_faer_col_mat(x_f))
+}
+
+#[cfg(feature = "faer-backend")]
+pub fn solve_svd(a: MatrixView<'_>, b: VectorView<'_>) -> Result<Vector> {
+    ensure_nonempty_mat(a)?;
+    ensure_nonempty_vec(b)?;
+    ensure_square(a)?;
+    ensure_rows_match(a, b)?;
+    let a_f = to_faer_mat(a);
+    let b_f = to_faer_col_mat(b);
+    let svd = a_f.svd().map_err(|_| Error::lin_alg("SVD decomposition failed"))?;
+    let s = svd.S();
+    let dim = s.dim();
+    let mut max_s = 0.0_f64;
+    for i in 0..dim {
+        max_s = max_s.max(s[i].abs());
+    }
+    let threshold = max_s * f64::EPSILON * (dim as f64).max(1.0);
+    let u_t = svd.U().transpose();
+    let vt = svd.V().transpose();
+    let utb = u_t * &b_f;
+    let mut d_utb = faer::Mat::zeros(dim, 1);
+    for i in 0..dim {
+        let si = s[i].abs();
+        if si > threshold {
+            d_utb[(i, 0)] = utb[(i, 0)] / si;
+        }
+    }
+    let x_f = (vt * &d_utb).to_owned();
     Ok(from_faer_col_mat(x_f))
 }
 

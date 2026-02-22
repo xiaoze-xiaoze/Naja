@@ -1,9 +1,19 @@
 use crate::core::compute::types::{MatrixView, VectorView};
-use crate::core::regularization::Penalty;
 use crate::core::traits::FitSupervised;
 use crate::core::Result;
 use super::fit;
 use super::predict::LinearRegressionSolution;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Penalty {
+    None,
+    Ridge { alpha: f64 },
+    Lasso { alpha: f64 },
+}
+
+impl Default for Penalty {
+    fn default() -> Self { Penalty::None }
+}
 
 #[derive(Debug, Clone)]
 pub struct LinearRegressionConfig {

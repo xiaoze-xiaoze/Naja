@@ -104,7 +104,6 @@ Naja/
 - **core::compute**（数值运算） -> [compute.md](docs/components/compute.md)
 - **core::data**（Dataset 与 validate） -> [data.md](docs/components/data.md)
 - **preprocessing**（数据预处理） -> [preprocessing.md](docs/components/preprocessing.md)
-- **core::regularization**（正则化） -> [regularization.md](docs/components/regularization.md)
 - **Metrics 指标库** -> [metrics.md](docs/components/metrics.md)
 - **Model Export (ONNX)** -> [onnx.md](docs/components/onnx.md)
 
