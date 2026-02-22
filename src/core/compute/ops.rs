@@ -33,6 +33,25 @@ pub fn ensure_gemv(a: MatrixView<'_>, x: VectorView<'_>) -> Result<()> {
     Ok(())
 }
 
+fn ensure_square(a: MatrixView<'_>) -> Result<()> {
+    if a.nrows() != a.ncols() {
+        return Err(Error::invalid_shape(format!(
+            "requires square matrix, got {}x{}", a.nrows(), a.ncols()
+        )));
+    }
+    Ok(())
+}
+
+fn ensure_rows_match(a: MatrixView<'_>, v: VectorView<'_>) -> Result<()> {
+    if a.nrows() != v.len() {
+        return Err(Error::invalid_shape(format!(
+            "row count mismatch: matrix has {} rows, vector has len {}", 
+            a.nrows(), v.len()
+        )));
+    }
+    Ok(())
+}
+
 pub fn add_intercept(x: MatrixView<'_>) -> Result<Matrix> {
     ensure_nonempty_mat(x)?;
     let n = x.nrows();
@@ -46,7 +65,7 @@ pub fn add_intercept(x: MatrixView<'_>) -> Result<Matrix> {
 pub fn add_diag_mut(a: &mut Matrix, alpha: f64) -> Result<()> {
     if !alpha.is_finite() { return Err(Error::invalid_param("alpha", "must be finite")); }
     ensure_nonempty_mat(a.view())?;
-    if a.nrows() != a.ncols() { return Err(Error::invalid_shape(format!("add_diag_mut requires square matrix, got {}x{}", a.nrows(), a.ncols()))); }
+    ensure_square(a.view())?;
     let n = a.nrows();
     for i in 0..n { a[(i, i)] += alpha; }
     Ok(())
@@ -101,7 +120,7 @@ pub fn xtx(x: MatrixView<'_>) -> Result<Matrix> {
 pub fn xty(x: MatrixView<'_>, y: VectorView<'_>) -> Result<Vector> {
     ensure_nonempty_mat(x)?;
     ensure_nonempty_vec(y)?;
-    if x.nrows() != y.len() { return Err(Error::invalid_shape(format!("xty dim mismatch: x is {}x{}, y has len {} (need x.nrows == y.len)", x.nrows(), x.ncols(), y.len()))); }
+    ensure_rows_match(x, y)?;
     Ok(x.t().dot(&y))
 }
 
@@ -225,8 +244,8 @@ pub fn solve_lstsq(_a: MatrixView<'_>, _b: VectorView<'_>) -> Result<Vector> { E
 pub fn solve_lu(a: MatrixView<'_>, b: VectorView<'_>) -> Result<Vector> {
     ensure_nonempty_mat(a)?;
     ensure_nonempty_vec(b)?;
-    if a.nrows() != a.ncols() { return Err(Error::invalid_shape(format!("solve_lu requires square matrix, got {}x{}", a.nrows(), a.ncols()))); }
-    if a.nrows() != b.len() { return Err(Error::invalid_shape(format!("solve_lu dim mismatch: a is {}x{}, b has len {}", a.nrows(), a.ncols(), b.len()))); }
+    ensure_square(a)?;
+    ensure_rows_match(a, b)?;
     let a_f = to_faer_mat(a);
     let b_f = to_faer_col_mat(b);
     let plu = a_f.partial_piv_lu();
@@ -238,8 +257,8 @@ pub fn solve_lu(a: MatrixView<'_>, b: VectorView<'_>) -> Result<Vector> {
 pub fn solve_cholesky(a: MatrixView<'_>, b: VectorView<'_>) -> Result<Vector> {
     ensure_nonempty_mat(a)?;
     ensure_nonempty_vec(b)?;
-    if a.nrows() != a.ncols() { return Err(Error::invalid_shape(format!("solve_cholesky requires square matrix, got {}x{}", a.nrows(), a.ncols()))); }
-    if a.nrows() != b.len() { return Err(Error::invalid_shape(format!("solve_cholesky dim mismatch: a is {}x{}, b has len {}", a.nrows(), a.ncols(), b.len()))); }
+    ensure_square(a)?;
+    ensure_rows_match(a, b)?;
     let a_f = to_faer_mat(a);
     let b_f = to_faer_col_mat(b);
     let llt = a_f.llt(faer::Side::Lower).map_err(|_| Error::lin_alg("cholesky failed: matrix may not be SPD"))?;
@@ -251,7 +270,7 @@ pub fn solve_cholesky(a: MatrixView<'_>, b: VectorView<'_>) -> Result<Vector> {
 pub fn solve_lstsq(a: MatrixView<'_>, b: VectorView<'_>) -> Result<Vector> {
     ensure_nonempty_mat(a)?;
     ensure_nonempty_vec(b)?;
-    if a.nrows() != b.len() { return Err(Error::invalid_shape(format!("solve_lstsq dim mismatch: a is {}x{}, b has len {} (need a.nrows == b.len)", a.nrows(), a.ncols(), b.len()))); }
+    ensure_rows_match(a, b)?;
     if a.nrows() < a.ncols() { return Err(Error::invalid_shape(format!("solve_lstsq expects tall matrix (nrows >= ncols), got {}x{}", a.nrows(), a.ncols()))); }
     let a_f = to_faer_mat(a);
     let b_f = to_faer_col_mat(b);
