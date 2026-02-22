@@ -85,6 +85,6 @@ fn package_solution(cfg: &LinearRegressionConfig, w: Vector) -> Result<LinearReg
         let intercept = w[0];
         let coeffs = w.slice(ndarray::s![1..]).to_owned();
         (intercept, coeffs)
-    } else {  (0.0, w) };
+    } else { (0.0, w) };
     Ok(LinearRegressionSolution { coefficients, intercept })
 }
