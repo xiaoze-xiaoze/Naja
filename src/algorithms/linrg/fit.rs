@@ -2,10 +2,10 @@ use ndarray::Array1;
 use crate::core::Result;
 use crate::core::compute::types::{MatrixView, Vector, VectorView};
 use crate::core::compute::ops;
-use super::model::{LinearRegressionConfig, Penalty};
-use super::solution::LinearRegressionModel;
+use crate::core::traits::Fitted;
+use super::model::{LinearRegression, LinearRegressionConfig, Penalty};
 
-pub fn fit(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_>) -> Result<LinearRegressionModel> {
+pub fn fit(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_>) -> Result<LinearRegression<Fitted>> {
     ops::ensure_nonempty_mat(x)?;
     ops::ensure_nonempty_vec(y)?;
     ops::ensure_len(y, x.column(0), "y", "x(rows)")?;
@@ -27,7 +27,7 @@ fn apply_lasso(z: f64, gamma: f64) -> f64 {
     else { 0.0 }
 }
 
-fn solve_closed_form(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_>) -> Result<LinearRegressionModel> {
+fn solve_closed_form(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_>) -> Result<LinearRegression<Fitted>> {
     let mut xtx = ops::xtx(x)?;
     if let Penalty::Ridge { alpha } = cfg.penalty { apply_ridge(&mut xtx, alpha, cfg.intercept); }
     let xty = ops::xty(x, y)?;
@@ -35,7 +35,7 @@ fn solve_closed_form(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorV
     package_solution(cfg, w)
 }
 
-fn solve_lasso(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_>) -> Result<LinearRegressionModel> {
+fn solve_lasso(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_>) -> Result<LinearRegression<Fitted>> {
     let n_features = x.ncols();
     let mut w = Array1::<f64>::zeros(n_features);
     let mut norm_sq = Array1::<f64>::zeros(n_features);
@@ -71,13 +71,9 @@ fn solve_lasso(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_
     package_solution(cfg, w)
 }
 
-fn package_solution(cfg: &LinearRegressionConfig, w: Vector) -> Result<LinearRegressionModel> {
-    let (intercept, coefficients) = if cfg.intercept {
-        let intercept = w[0];
-        let coeffs = w.slice(ndarray::s![1..]).to_owned();
-        (intercept, coeffs)
-    } else {
-        (0.0, w)
-    };
-    Ok(LinearRegressionModel { coefficients, intercept })
+fn package_solution(cfg: &LinearRegressionConfig, w: Vector) -> Result<LinearRegression<Fitted>> {
+    let (intercept_value, coefficients) = if cfg.intercept {
+        (w[0], w.slice(ndarray::s![1..]).to_owned())
+    } else { (0.0, w) };
+    Ok(LinearRegression::new_fitted(cfg.clone(), coefficients, intercept_value))
 }

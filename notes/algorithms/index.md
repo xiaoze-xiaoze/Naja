@@ -1,8 +1,8 @@
-# 算法文档
+# 算法笔记
 
-## 概述
+> [返回 API 文档](../../docs/index.md)
 
-Naja 提供常用的监督学习与无监督学习算法，所有算法遵循统一的 Model / Fit / Predict 范式。
+本目录包含 Naja 支持的机器学习算法的原理笔记，包括数学模型、假设条件、优缺点分析等。
 
 ## 算法总览
 
@@ -42,29 +42,6 @@ Naja 提供常用的监督学习与无监督学习算法，所有算法遵循统
 |------|------|------|
 | PCA | [pca.md](pca.md) | 主成分分析 |
 | LDA | [lda.md](lda.md) | 线性判别分析 |
-
----
-
-## 使用范式
-
-所有算法遵循统一的三阶段范式：
-
-```rust
-// 1. 创建模型（链式配置超参数）
-let model = Algorithm::new()
-    .param1(value1)
-    .param2(value2);
-
-// 2. 训练
-let fitted = model.fit_supervised(x, y)?;  // 监督学习
-// 或
-let fitted = model.fit_unsupervised(x)?;   // 无监督学习
-
-// 3. 预测/变换
-let result = fitted.predict(x)?;           // 预测
-// 或
-let result = fitted.transform(x)?;         // 变换（降维等）
-```
 
 ---
 

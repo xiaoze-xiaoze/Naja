@@ -18,4 +18,5 @@ pub mod prelude {
     pub use crate::pipeline::Pipeline2;
     pub use crate::core::Result;
     pub use crate::preprocessing::{StandardScaler, MinMaxScaler, RobustScaler};
+    pub use crate::algorithms::linrg::LinearRegression;
 }
