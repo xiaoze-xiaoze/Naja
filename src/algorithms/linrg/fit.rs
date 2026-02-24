@@ -1,11 +1,11 @@
 use ndarray::Array1;
-use crate::core::{Result, Error};
+use crate::core::Result;
 use crate::core::compute::types::{MatrixView, Vector, VectorView};
 use crate::core::compute::ops;
 use super::model::{LinearRegressionConfig, Penalty};
-use super::predict::LinearRegressionSolution;
+use super::solution::LinearRegressionModel;
 
-pub fn fit(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_>) -> Result<LinearRegressionSolution> {
+pub fn fit(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_>) -> Result<LinearRegressionModel> {
     ops::ensure_nonempty_mat(x)?;
     ops::ensure_nonempty_vec(y)?;
     ops::ensure_len(y, x.column(0), "y", "x(rows)")?;
@@ -18,9 +18,7 @@ pub fn fit(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_>) -
 
 fn apply_ridge(xtx: &mut ndarray::Array2<f64>, alpha: f64, intercept: bool) {
     let start_idx = if intercept { 1 } else { 0 };
-    for i in start_idx..xtx.nrows() {
-        xtx[[i, i]] += alpha;
-    }
+    for i in start_idx..xtx.nrows() { xtx[[i, i]] += alpha; }
 }
 
 fn apply_lasso(z: f64, gamma: f64) -> f64 {
@@ -29,21 +27,15 @@ fn apply_lasso(z: f64, gamma: f64) -> f64 {
     else { 0.0 }
 }
 
-fn solve_closed_form(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_>) -> Result<LinearRegressionSolution> {
+fn solve_closed_form(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_>) -> Result<LinearRegressionModel> {
     let mut xtx = ops::xtx(x)?;
-    if let Penalty::Ridge { alpha } = cfg.penalty {
-        apply_ridge(&mut xtx, alpha, cfg.intercept);
-    }
+    if let Penalty::Ridge { alpha } = cfg.penalty { apply_ridge(&mut xtx, alpha, cfg.intercept); }
     let xty = ops::xty(x, y)?;
-    let w = match ops::solve_cholesky(xtx.view(), xty.view()) {
-        Ok(w) => w,
-        Err(_) => ops::solve_svd(xtx.view(), xty.view())
-            .map_err(|e| Error::lin_alg(format!("Failed to solve normal equation (tried Cholesky and SVD): {}", e)))?,
-    };
+    let w = ops::solve_cholesky(xtx.view(), xty.view()).or_else(|_| ops::solve_svd(xtx.view(), xty.view()))?;
     package_solution(cfg, w)
 }
 
-fn solve_lasso(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_>) -> Result<LinearRegressionSolution> {
+fn solve_lasso(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_>) -> Result<LinearRegressionModel> {
     let n_features = x.ncols();
     let mut w = Array1::<f64>::zeros(n_features);
     let mut norm_sq = Array1::<f64>::zeros(n_features);
@@ -58,8 +50,8 @@ fn solve_lasso(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_
             let rho = dot_xr + w[j] * norm_sq[j];
             let old_w_j = w[j];
             let new_w_j;
-            if is_intercept { 
-                new_w_j = rho / norm_sq[j]; 
+            if is_intercept {
+                new_w_j = rho / norm_sq[j];
             } else {
                 let soft_thresholded = match cfg.penalty {
                     Penalty::Lasso { alpha } => apply_lasso(rho, alpha),
@@ -76,15 +68,16 @@ fn solve_lasso(cfg: &LinearRegressionConfig, x: MatrixView<'_>, y: VectorView<'_
         }
         if max_change < cfg.tol { break; }
     }
-    
     package_solution(cfg, w)
 }
 
-fn package_solution(cfg: &LinearRegressionConfig, w: Vector) -> Result<LinearRegressionSolution> {
+fn package_solution(cfg: &LinearRegressionConfig, w: Vector) -> Result<LinearRegressionModel> {
     let (intercept, coefficients) = if cfg.intercept {
         let intercept = w[0];
         let coeffs = w.slice(ndarray::s![1..]).to_owned();
         (intercept, coeffs)
-    } else { (0.0, w) };
-    Ok(LinearRegressionSolution { coefficients, intercept })
+    } else {
+        (0.0, w)
+    };
+    Ok(LinearRegressionModel { coefficients, intercept })
 }

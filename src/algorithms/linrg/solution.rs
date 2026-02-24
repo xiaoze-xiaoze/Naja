@@ -1,15 +1,20 @@
 use crate::core::{Result, Error};
 use crate::core::compute::types::{MatrixView, Vector};
 use crate::core::compute::ops;
-use crate::core::traits::Predictor;
+use crate::core::traits::{Component, Fitted, Predictor};
 
 #[derive(Debug, Clone)]
-pub struct LinearRegressionSolution {
+pub struct LinearRegressionModel {
     pub coefficients: Vector,
     pub intercept: f64,
 }
 
-impl Predictor for LinearRegressionSolution {
+impl Component<Fitted> for LinearRegressionModel {
+    type NextState = Fitted;
+    type Output = Vector;
+}
+
+impl Predictor for LinearRegressionModel {
     fn predict(&self, x: MatrixView<'_>) -> Result<Vector> {
         ops::ensure_nonempty_mat(x)?;
         if x.ncols() != self.coefficients.len() { return Err(Error::invalid_shape(format!("Input features mismatch: model has {}, input has {}", self.coefficients.len(), x.ncols()))); }

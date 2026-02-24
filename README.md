@@ -9,28 +9,6 @@ Naja 是一个面向工程使用的 Rust 机器学习库，目标是在保持 Ru
 - 统一的数值计算与数据校验入口
 - 组件与算法文档保持一致结构
 
-## 快速开始
-
-### 监督学习
-
-```rust
-let model = LinearRegression::new()
-    .intercept(true)
-    .penalty(Penalty::Ridge { alpha: 1e-2 });
-let solution = model.fit(&x_train, &y_train)?;
-let y_pred = solution.predict(&x_test)?;
-```
-
-### 非监督学习
-
-```rust
-let model = KMeans::new()
-    .k(8)
-    .max_iter(300);
-let solution = model.fit(&x)?;
-let labels = solution.predict(&x)?;
-```
-
 ## API 设计（三阶段范式）
 
 | 阶段 | 方法 | 职责 |
@@ -77,9 +55,8 @@ Naja/
 │   │       ├── mod.rs
 │   │       ├── types.rs
 │   │       └── ops.rs
-│   ├── preprocessing/
+│   ├── preprocessing/                 # 预处理模块
 │   │   ├── mod.rs                     # 统一导出 + Pipeline 类型
-│   │   ├── traits.rs                  # 预处理核心 trait (Estimator, Transformer)
 │   │   ├── scaler/                    # 特征缩放
 │   │   │   ├── mod.rs
 │   │   │   ├── standard.rs            # StandardScaler
@@ -89,51 +66,64 @@ Naja/
 │   │   │   ├── mod.rs
 │   │   │   ├── onehot.rs              # OneHotEncoder
 │   │   │   └── label.rs               # LabelEncoder
-│   │   ├── imputer/                   # 缺失值处理
-│   │   │   ├── mod.rs
-│   │   │   └── simple.rs              # SimpleImputer
-│   │   └── pipeline/                  # 预处理流水线
+│   │   └── imputer/                   # 缺失值处理
 │   │       ├── mod.rs
-│   │       └── compose.rs
-│   ├── io/                            # 模型导入导出 (ONNX 等)
+│   │       └── simple.rs              # SimpleImputer
+│   │── pipeline/                      # 流水线
+│   │   ├── mod.rs
+│   │   └── compose.rs
+│   ├── io/                            # 模型导入导出
 │   │   ├── mod.rs
 │   │   └── onnx.rs
-│   ├── metrics/                       # 指标：分类/回归/聚类
+│   ├── metrics/                       # 指标
 │   │   ├── mod.rs                     # metrics 模块入口
 │   │   ├── classifier.rs              # 分类指标
 │   │   ├── regressor.rs               # 回归指标
 │   │   └── clusterer.rs               # 聚类指标
 │   └── algorithms/                    # 算法实现
 │       ├── mod.rs
-│       ├── linrg.rs
-│       ├── logrg.rs
-│       ├── svm.rs
-│       ├── knn.rs
-│       ├── nbayes.rs
-│       ├── dtree.rs
-│       ├── rndfst.rs
-│       ├── xgb.rs
-│       ├── kmeans.rs
-│       ├── dbscan.rs
-│       ├── gmm.rs
-│       ├── pca.rs
-│       └── lda.rs
+│       ├── linrg/
+│       ├── logrg/
+│       ├── svm/
+│       ├── knn/
+│       ├── nbayes/
+│       ├── dtree/
+│       ├── rndfst/
+│       ├── xgb/
+│       ├── kmeans/
+│       ├── dbscan/
+│       ├── gmm/
+│       ├── pca/
+│       └── lda/
+├── tests/
 └── examples/
-    └── linrg_demo.rs
 ```
 
 ## 文档索引
 
-### 组件文档
+### 快速入门
 
-- **Core Traits**（核心抽象） -> [traits.md](docs/components/traits.md)
-- **core::error**（错误与 Result） -> [error.md](docs/components/error.md)
-- **core::compute**（数值运算） -> [compute.md](docs/components/compute.md)
-- **core::data**（Dataset 与 validate） -> [data.md](docs/components/data.md)
-- **preprocessing**（数据预处理） -> [preprocessing.md](docs/components/preprocessing.md)
-- **Metrics 指标库** -> [metrics.md](docs/components/metrics.md)
-- **Model Export (ONNX)** -> [onnx.md](docs/components/onnx.md)
+- [快速入门指南](docs/guide/quickstart.md) — 端到端示例
 
-### 算法文档
+### 核心模块 (core)
 
-- 线性回归 -> [linrg.md](docs/algorithms/linrg.md)
+- [core 概览](docs/core/index.md)
+- [traits](docs/core/traits.md) — 核心抽象（fit/predict/transform）
+- [error](docs/core/error.md) — 错误处理
+- [compute](docs/core/compute.md) — 数值运算
+- [data](docs/core/data.md) — 数据容器
+
+### 预处理与流水线
+
+- [preprocessing](docs/preprocessing/index.md) — 数据预处理（StandardScaler / MinMaxScaler / RobustScaler）
+- [pipeline](docs/pipeline/index.md) — 流水线
+
+### 评估与导出
+
+- [metrics](docs/metrics/index.md) — 指标库
+- [io](docs/io/index.md) — 模型导出（ONNX）
+
+### 算法
+
+- [算法概览](docs/algorithms/index.md)
+- [线性回归](docs/algorithms/linrg.md)
