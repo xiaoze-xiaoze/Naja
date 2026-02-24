@@ -59,14 +59,14 @@ pub fn noisy_linear_data(seed: u64) -> (Array2<f64>, Array1<f64>) {
     
     let mut rng_state = seed;
     let mut rand_val = || -> f64 {
-        rng_state = rng_state.wrapping_mul(1103515245).wrapping_add(12345);
-        ((rng_state >> 16) as f64 / 32768.0) - 0.5
+        rng_state = rng_state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        (rng_state >> 33) as f64 / (1u64 << 31) as f64
     };
     
     for i in 0..n {
         let x_val = i as f64 * 0.1;
         x_data.push(x_val);
-        let noise = rand_val() * 0.5;
+        let noise = (rand_val() - 0.5) * 0.5;
         y_data.push(2.0 * x_val + 1.0 + noise);
     }
     

@@ -2,6 +2,24 @@ use crate::core::{Result, Error};
 use crate::core::compute::types::{VectorView};
 use crate::core::compute::ops::{ensure_len, ensure_nonempty_vec};
 
+pub struct RegressionMetrics {
+    pub mse: f64,
+    pub rmse: f64,
+    pub mae: f64,
+    pub r2: f64,
+}
+
+impl RegressionMetrics {
+    pub fn new(y_true: VectorView<'_>, y_pred: VectorView<'_>) -> Result<Self> {
+        Ok(Self {
+            mse: mse(y_true, y_pred)?,
+            rmse: rmse(y_true, y_pred)?,
+            mae: mae(y_true, y_pred)?,
+            r2: r2_score(y_true, y_pred)?,
+        })
+    }
+}
+
 pub fn mse(y_true: VectorView<'_>, y_pred: VectorView<'_>) -> Result<f64> {
     ensure_nonempty_vec(y_true)?;
     ensure_len(y_true, y_pred, "y_true", "y_pred")?;

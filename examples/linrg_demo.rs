@@ -7,8 +7,8 @@ mod utils;
 use utils::generate_linear_data;
 
 fn main() {
-    let n_samples = 10_000;
-    let n_features = 20;
+    let n_samples = 500_000;
+    let n_features = 200;
     let noise_level = 0.1;
     let seed = 42u64;
 
@@ -62,18 +62,12 @@ fn main() {
     println!("{}", "─".repeat(43));
     println!("{:<10} {:>10} {:>10} {:>10}", "Model", "RMSE", "R²", "Time");
     println!("{}", "─".repeat(43));
-
-    let ols_rmse = metrics::rmse(y.view(), ols_pred.view()).unwrap();
-    let ols_r2 = metrics::r2_score(y.view(), ols_pred.view()).unwrap();
-    println!("{:<10} {:>10.6} {:>10.6} {:>10?}", "OLS", ols_rmse, ols_r2, ols_time);
-
-    let ridge_rmse = metrics::rmse(y.view(), ridge_pred.view()).unwrap();
-    let ridge_r2 = metrics::r2_score(y.view(), ridge_pred.view()).unwrap();
-    println!("{:<10} {:>10.6} {:>10.6} {:>10?}", "Ridge", ridge_rmse, ridge_r2, ridge_time);
-
-    let lasso_rmse = metrics::rmse(y.view(), lasso_pred.view()).unwrap();
-    let lasso_r2 = metrics::r2_score(y.view(), lasso_pred.view()).unwrap();
-    println!("{:<10} {:>10.6} {:>10.6} {:>10?}", "Lasso", lasso_rmse, lasso_r2, lasso_time);
+    let ols_m = metrics::RegressionMetrics::new(y.view(), ols_pred.view()).unwrap();
+    println!("{:<10} {:>10.6} {:>10.6} {:>10?}", "OLS", ols_m.rmse, ols_m.r2, ols_time);
+    let ridge_m = metrics::RegressionMetrics::new(y.view(), ridge_pred.view()).unwrap();
+    println!("{:<10} {:>10.6} {:>10.6} {:>10?}", "Ridge", ridge_m.rmse, ridge_m.r2, ridge_time);
+    let lasso_m = metrics::RegressionMetrics::new(y.view(), lasso_pred.view()).unwrap();
+    println!("{:<10} {:>10.6} {:>10.6} {:>10?}", "Lasso", lasso_m.rmse, lasso_m.r2, lasso_time);
     println!("{}\n", "─".repeat(43));
 
     println!("[7] Coefficient comparison (first 5)");

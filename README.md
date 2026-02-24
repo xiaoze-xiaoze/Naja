@@ -77,9 +77,24 @@ Naja/
 │   │       ├── mod.rs
 │   │       ├── types.rs
 │   │       └── ops.rs
-│   ├── preprocessing/                 # 数据预处理
-│   │   ├── mod.rs
-│   │   └── scaler.rs                  # 标准化等 transformer
+│   ├── preprocessing/
+│   │   ├── mod.rs                     # 统一导出 + Pipeline 类型
+│   │   ├── traits.rs                  # 预处理核心 trait (Estimator, Transformer)
+│   │   ├── scaler/                    # 特征缩放
+│   │   │   ├── mod.rs
+│   │   │   ├── standard.rs            # StandardScaler
+│   │   │   ├── minmax.rs              # MinMaxScaler
+│   │   │   └── robust.rs              # RobustScaler
+│   │   ├── encoder/                   # 数据编码
+│   │   │   ├── mod.rs
+│   │   │   ├── onehot.rs              # OneHotEncoder
+│   │   │   └── label.rs               # LabelEncoder
+│   │   ├── imputer/                   # 缺失值处理
+│   │   │   ├── mod.rs
+│   │   │   └── simple.rs              # SimpleImputer
+│   │   └── pipeline/                  # 预处理流水线
+│   │       ├── mod.rs
+│   │       └── compose.rs
 │   ├── io/                            # 模型导入导出 (ONNX 等)
 │   │   ├── mod.rs
 │   │   └── onnx.rs
@@ -91,6 +106,18 @@ Naja/
 │   └── algorithms/                    # 算法实现
 │       ├── mod.rs
 │       ├── linrg.rs
+│       ├── logrg.rs
+│       ├── svm.rs
+│       ├── knn.rs
+│       ├── nbayes.rs
+│       ├── dtree.rs
+│       ├── rndfst.rs
+│       ├── xgb.rs
+│       ├── kmeans.rs
+│       ├── dbscan.rs
+│       ├── gmm.rs
+│       ├── pca.rs
+│       └── lda.rs
 └── examples/
     └── linrg_demo.rs
 ```

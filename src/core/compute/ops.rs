@@ -271,9 +271,9 @@ pub fn solve_svd(a: MatrixView<'_>, b: VectorView<'_>) -> Result<Vector> {
     for i in 0..dim {
         max_s = max_s.max(s[i].abs());
     }
-    let threshold = max_s * f64::EPSILON * (dim as f64).max(1.0);
+    let threshold = max_s * (dim as f64).max(1.0) * f64::EPSILON.sqrt();
     let u_t = svd.U().transpose();
-    let vt = svd.V().transpose();
+    let v = svd.V();
     let utb = u_t * &b_f;
     let mut d_utb = faer::Mat::zeros(dim, 1);
     for i in 0..dim {
@@ -282,7 +282,7 @@ pub fn solve_svd(a: MatrixView<'_>, b: VectorView<'_>) -> Result<Vector> {
             d_utb[(i, 0)] = utb[(i, 0)] / si;
         }
     }
-    let x_f = (vt * &d_utb).to_owned();
+    let x_f = (v * &d_utb).to_owned();
     Ok(from_faer_col_mat(x_f))
 }
 
