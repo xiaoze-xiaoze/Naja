@@ -18,3 +18,4 @@ argmin-solver = ["dep:argmin"]
 
 [dev-dependencies]
 rand = "0.8"
+approx = "0.5"
