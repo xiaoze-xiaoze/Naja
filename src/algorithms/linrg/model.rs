@@ -15,17 +15,29 @@ impl Default for Penalty {
     fn default() -> Self { Penalty::None }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum Solver {
+    ClosedForm,
+    GradientDescent { learning_rate: f64, grad_tol: f64 },
+    CoordinateDescent,
+}
+
+impl Default for Solver {
+    fn default() -> Self { Solver::ClosedForm }
+}
+
 #[derive(Debug, Clone)]
 pub struct LinearRegressionConfig {
     pub intercept: bool,
     pub penalty: Penalty,
     pub max_iter: usize,
     pub tol: f64,
+    pub solver: Solver,
 }
 
 impl Default for LinearRegressionConfig {
     fn default() -> Self {
-        Self { intercept: true, penalty: Penalty::None, max_iter: 1000, tol: 1e-4 }
+        Self { intercept: true, penalty: Penalty::None, max_iter: 1000, tol: 1e-4, solver: Solver::ClosedForm }
     }
 }
 
@@ -68,6 +80,11 @@ impl LinearRegression<Unfitted> {
 
     pub fn tol(mut self, tol: f64) -> Self {
         self.config.tol = tol;
+        self
+    }
+
+    pub fn solver(mut self, solver: Solver) -> Self {
+        self.config.solver = solver;
         self
     }
 }

@@ -16,6 +16,7 @@ pub mod preprocessing {
 
 pub mod algorithms {
     pub mod linrg;
+    pub mod logrg;
 }
 
 pub mod metrics {

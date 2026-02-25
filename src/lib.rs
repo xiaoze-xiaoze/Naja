@@ -19,4 +19,5 @@ pub mod prelude {
     pub use crate::core::Result;
     pub use crate::preprocessing::{StandardScaler, MinMaxScaler, RobustScaler};
     pub use crate::algorithms::linrg::LinearRegression;
+    pub use crate::algorithms::logrg::LogisticRegression;
 }

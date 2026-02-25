@@ -1,6 +1,6 @@
 mod utils;
 
-use naja::algorithms::linrg::{LinearRegression, Penalty};
+use naja::algorithms::linrg::{LinearRegression, Penalty, Solver};
 use naja::core::traits::{Predictor, SupervisedEstimator};
 use naja::metrics::{rmse, r2_score};
 use utils::*;
@@ -41,7 +41,7 @@ fn main() {
     println!();
     
     let start = Instant::now();
-    let model_lasso = LinearRegression::new().penalty(Penalty::Lasso { alpha: 0.01 }).max_iter(1000);
+    let model_lasso = LinearRegression::new().penalty(Penalty::Lasso { alpha: 0.01 }).max_iter(1000).solver(Solver::CoordinateDescent);
     let fitted_lasso = model_lasso.fit_supervised(x.view(), y.view()).unwrap();
     let time_lasso = start.elapsed();
     println!("[4] Training Lasso (alpha=0.01)...");
@@ -68,7 +68,7 @@ fn main() {
     
     println!("[6] Evaluation");
     println!("    {:<8} {:<14} {:<14} {:<14}", "Model", "RMSE", "R²", "Time");
-    println!("    {}", separator(60));
+    println!("    {}", table_separator(&[8, 14, 14, 14]));
     println!("    {:<8} {:<14.6} {:<14.6} {:.3}ms", "OLS", rmse_ols, r2_ols, time_ols.as_secs_f64() * 1e3);
     println!("    {:<8} {:<14.6} {:<14.6} {:.3}ms", "Ridge", rmse_ridge, r2_ridge, time_ridge.as_secs_f64() * 1e3);
     println!("    {:<8} {:<14.6} {:<14.6} {:.3}ms", "Lasso", rmse_lasso, r2_lasso, time_lasso.as_secs_f64() * 1e3);

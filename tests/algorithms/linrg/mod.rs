@@ -108,11 +108,13 @@ mod behavior {
 
     #[test]
     fn test_lasso_regularization() {
+        use naja::algorithms::linrg::Solver;
         let x = make_matrix(5, 2, &[1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 4.0, 0.0, 5.0, 0.0]);
         let y = make_vector(&[2.0, 4.0, 6.0, 8.0, 10.0]);
         let model = LinearRegression::new()
             .penalty(Penalty::Lasso { alpha: 0.1 })
-            .max_iter(1000);
+            .max_iter(1000)
+            .solver(Solver::CoordinateDescent);
         let fitted = SupervisedEstimator::fit_supervised(&model, x.view(), y.view()).unwrap();
         assert!(fitted.coefficients()[1].abs() < fitted.coefficients()[0].abs());
     }

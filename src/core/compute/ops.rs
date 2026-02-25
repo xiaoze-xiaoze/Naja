@@ -298,3 +298,44 @@ pub fn solve_lstsq(a: MatrixView<'_>, b: VectorView<'_>) -> Result<Vector> {
     let x_f = qr.solve(&b_f);
     Ok(from_faer_col_mat(x_f))
 }
+
+/// Soft thresholding operator for Lasso
+pub fn soft_threshold(z: f64, gamma: f64) -> f64 {
+    if z > gamma { z - gamma }
+    else if z < -gamma { z + gamma }
+    else { 0.0 }
+}
+
+/// Compute X^T * diag(w) * X efficiently
+pub fn xtwx(x: MatrixView<'_>, w_diag: VectorView<'_>) -> Result<ndarray::Array2<f64>> {
+    ensure_nonempty_mat(x)?;
+    ensure_len(w_diag, x.column(0), "w_diag", "x(rows)")?;
+    
+    let mut wx = x.to_owned();
+    for i in 0..x.nrows() {
+        let wi = w_diag[i];
+        for j in 0..x.ncols() {
+            wx[[i, j]] *= wi;
+        }
+    }
+    Ok(x.t().dot(&wx))
+}
+
+/// Compute X^T * diag(w) * z efficiently
+pub fn xtwz(x: MatrixView<'_>, w_diag: VectorView<'_>, z: VectorView<'_>) -> Result<Vector> {
+    ensure_nonempty_mat(x)?;
+    ensure_len(w_diag, x.column(0), "w_diag", "x(rows)")?;
+    ensure_len(z, x.column(0), "z", "x(rows)")?;
+    
+    let n = x.nrows();
+    let p = x.ncols();
+    let mut result = Array1::zeros(p);
+    
+    for i in 0..n {
+        let wi_zi = w_diag[i] * z[i];
+        for j in 0..p {
+            result[j] += x[[i, j]] * wi_zi;
+        }
+    }
+    Ok(result)
+}
