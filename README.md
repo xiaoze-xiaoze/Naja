@@ -30,11 +30,11 @@ Naja 是一个面向工程使用的 Rust 机器学习库，目标是在保持 Ru
 5. Naive Bayes
 6. Decision Tree
 7. Random Forest
-8. XGBoost
-9. KMeans
-10. DBSCAN
-11. Gaussian Mixture Model
-12. LDA
+8. Gradient Boosting Machine
+1. KMeans
+2.  DBSCAN
+3.  Gaussian Mixture Model
+4.  LDA
 
 ## 项目结构
 
@@ -89,7 +89,7 @@ Naja/
 │       ├── nbayes/
 │       ├── dtree/
 │       ├── rndfst/
-│       ├── xgb/
+│       ├── gbm/
 │       ├── kmeans/
 │       ├── dbscan/
 │       ├── gmm/
