@@ -1,6 +1,33 @@
 # Core Traits（核心抽象）
 
-## 概述
+`core` 是 Naja 的最小核心层，为算法实现提供基础抽象。所有算法模块依赖 core，但 core 不依赖任何算法模块。
+
+## 模块组成
+
+| 模块 | 职责 | 文档 |
+|------|------|------|
+| `traits` | 核心抽象 — fit/predict/transform trait | 本文档 |
+| `error` | 错误处理 — 统一 Error 与 Result | [error.md](error.md) |
+| `compute` | 数值运算 — ndarray/faer 封装 | [compute.md](compute.md) |
+| `data` | 数据容器 — Dataset 与校验 | [data.md](data.md) |
+
+## 模块依赖关系
+
+```
+core/
+├── error.rs          # 无依赖
+├── traits.rs         # 依赖 error, compute::types
+├── compute/          # 依赖 error
+│   ├── types.rs
+│   └── ops.rs
+└── data/             # 依赖 error, compute
+    ├── dataset.rs
+    └── validate.rs
+```
+
+---
+
+## Traits 概述
 
 核心 trait 定义了模型的训练、预测与变换接口，通过 typestate 模式在编译期区分拟合前后能力，保证算法统一范式与可组合性。
 
@@ -89,9 +116,7 @@ Transformer
 ```rust
 use naja::algorithms::linrg::LinearRegression;
 use naja::core::traits::{SupervisedEstimator, Predictor};
-
-let model = LinearRegression::new()
-    .intercept(true);
+let model = LinearRegression::new().intercept(true);
 let fitted = model.fit_supervised(x_train.view(), y_train.view())?;
 let y_pred = fitted.predict(x_test.view())?;
 ```
@@ -101,7 +126,6 @@ let y_pred = fitted.predict(x_test.view())?;
 ```rust
 use naja::algorithms::kmeans::KMeans;
 use naja::core::traits::{UnsupervisedEstimator, Predictor};
-
 let model = KMeans::new().k(3);
 let fitted = model.fit_unsupervised(x.view())?;
 let labels = fitted.predict(x.view())?;
@@ -112,7 +136,6 @@ let labels = fitted.predict(x.view())?;
 ```rust
 use naja::preprocessing::StandardScaler;
 use naja::core::traits::{FittableTransformer, Transformer, InversibleTransformer};
-
 let scaler = StandardScaler::new();
 let fitted = scaler.fit(x_train.view())?;
 let x_scaled = fitted.transform(x_test.view())?;
@@ -124,9 +147,7 @@ let x_original = fitted.inverse_transform(x_scaled.view())?;
 ```rust
 use naja::preprocessing::StandardScaler;
 use naja::core::traits::{FittableTransformer, PartialFit};
-
 let mut fitted = StandardScaler::new().fit(batch1.view())?;
-
 for batch in data_stream {
     fitted.partial_fit(batch.view(), None)?;
 }

@@ -64,14 +64,11 @@ use naja::preprocessing::StandardScaler;
 use naja::algorithms::linrg::LinearRegression;
 use naja::pipeline::pipeline;
 use naja::core::traits::{SupervisedEstimator, Predictor};
-
 let preprocessor = StandardScaler::new();
 let estimator = LinearRegression::new().intercept(true);
 let pipe = pipeline(preprocessor, estimator);
-
 // 训练：自动完成 fit_transform(preprocessor) + fit_supervised(estimator)
 let fitted = pipe.fit_supervised(x_train.view(), y_train.view())?;
-
 // 预测：自动完成 transform(preprocessor) + predict(estimator)
 let y_pred = fitted.predict(x_test.view())?;
 ```
@@ -83,11 +80,9 @@ use naja::preprocessing::StandardScaler;
 use naja::algorithms::kmeans::KMeans;
 use naja::pipeline::pipeline;
 use naja::core::traits::{UnsupervisedEstimator, Predictor};
-
 let preprocessor = StandardScaler::new();
 let estimator = KMeans::new().k(3);
 let pipe = pipeline(preprocessor, estimator);
-
 let fitted = pipe.fit_unsupervised(x.view())?;
 let labels = fitted.predict(x.view())?;
 ```
@@ -98,12 +93,10 @@ let labels = fitted.predict(x.view())?;
 use naja::preprocessing::StandardScaler;
 use naja::algorithms::linrg::LinearRegression;
 use naja::pipeline::pipeline;
-
 let preprocessor = StandardScaler::new();
 let estimator = LinearRegression::new();
 let pipe = pipeline(preprocessor, estimator);
 let fitted = pipe.fit_supervised(x_train.view(), y_train.view())?;
-
 // 仅对预处理部分做逆变换
 let x_original = fitted.inverse_transform(x_scaled.view())?;
 ```

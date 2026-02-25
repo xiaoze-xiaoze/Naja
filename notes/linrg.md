@@ -8,11 +8,7 @@
 
 $$ y = Xw + b + \epsilon $$
 
-其中 $w$ 是权重向量，$b$ 是截距（bias/intercept），$\epsilon$ 是误差项。矩阵写法
-
-$$ y = Xw + b + \epsilon $$
-
-强调了两点：所有样本共享同一组参数；截距相当于一列常数项，表示整体的基线偏移。
+其中 $w$ 是权重向量，$b$ 是截距（bias/intercept），$\epsilon$ 是误差项。
 
 线性回归的拟合目标是最小化平方误差：
 

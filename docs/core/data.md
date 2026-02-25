@@ -82,13 +82,10 @@ pub struct DatasetView<'a> {
 
 ```rust
 use naja::core::data::{Dataset, DatasetView};
-
 let dataset = Dataset::new(records, targets)?;
 let dataset = dataset.with_feature_names(vec!["age".into(), "income".into()])?;
-
 // 零拷贝 split
 let (train, test) = dataset.split(0.2)?;
-
 // 直接传给算法
 let model = LinearRegression::new();
 let fitted = model.fit_supervised(train.records, train.targets)?;
@@ -98,7 +95,6 @@ let fitted = model.fit_supervised(train.records, train.targets)?;
 
 ```rust
 let view = dataset.as_view();
-
 // 需要独立所有权时
 let owned = view.to_owned();
 ```

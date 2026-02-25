@@ -73,14 +73,11 @@ pub enum Error {
 
 ```rust
 use naja::core::{Error, Result};
-
 fn my_function(x: MatrixView<'_>) -> Result<Vector> {
     ops::ensure_nonempty_mat(x)?;
-    
     if x.ncols() == 0 {
         return Err(Error::invalid_shape("matrix has zero columns"));
     }
-    
     // ...
     Ok(result)
 }
@@ -90,7 +87,6 @@ fn my_function(x: MatrixView<'_>) -> Result<Vector> {
 
 ```rust
 use naja::core::Error;
-
 match model.fit(&x, &y) {
     Ok(fitted) => { /* ... */ },
     Err(Error::InvalidShape(msg)) => eprintln!("Shape error: {}", msg),
@@ -103,14 +99,11 @@ match model.fit(&x, &y) {
 
 ```rust
 use naja::core::Result;
-
 fn train_pipeline(x: MatrixView<'_>, y: VectorView<'_>) -> Result<Vector> {
     let scaler = StandardScaler::new().fit(x)?;
     let x_scaled = scaler.transform(x)?;
-    
     let model = LinearRegression::new();
     let fitted = model.fit_supervised(x_scaled.view(), y)?;
-    
     fitted.predict(x_scaled.view())
 }
 ```

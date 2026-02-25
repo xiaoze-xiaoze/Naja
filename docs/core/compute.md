@@ -113,7 +113,6 @@ pub type VectorView<'a> = ndarray::ArrayView1<'a, f64>;
 
 ```rust
 use naja::core::compute::ops;
-
 let mean = ops::col_mean(x.view())?;
 let xtx = ops::xtx(x.view())?;
 let y_pred = ops::gemv(x.view(), w.view())?;
@@ -123,7 +122,6 @@ let y_pred = ops::gemv(x.view(), w.view())?;
 
 ```rust
 use naja::core::compute::ops;
-
 let x_design = ops::add_intercept(x.view())?;
 let xtx = ops::xtx(x_design.view())?;
 let xty = ops::xty(x_design.view(), y.view())?;
@@ -134,7 +132,6 @@ let w = ops::solve_cholesky(xtx.view(), xty.view())?;
 
 ```rust
 use naja::core::compute::ops;
-
 let mut logits = vec![1.0, 2.0, 3.0];
 let mut v = ndarray::Array1::from_vec(logits);
 ops::softmax_mut(&mut v)?;

@@ -1,4 +1,4 @@
-# preprocessing（数据预处理）
+# Scaler（数据缩放）
 
 ## 概述
 
@@ -62,16 +62,12 @@ pub struct StandardScaler<S: State = Unfitted> {
 ```rust
 use naja::preprocessing::StandardScaler;
 use naja::core::traits::{FittableTransformer, Transformer, InversibleTransformer};
-
 let scaler = StandardScaler::new();
 let fitted = scaler.fit(x_train.view())?;
-
 let x_train_scaled = fitted.transform(x_train.view())?;
 let x_test_scaled = fitted.transform(x_test.view())?;
-
 // 恢复原尺度
 let x_original = fitted.inverse_transform(x_train_scaled.view())?;
-
 // 增量学习
 let mut fitted = StandardScaler::new().fit(batch1.view())?;
 for batch in stream {
@@ -135,11 +131,8 @@ pub struct MinMaxScaler<S: State = Unfitted> {
 ```rust
 use naja::preprocessing::MinMaxScaler;
 use naja::core::traits::{FittableTransformer, Transformer, InversibleTransformer};
-
-let scaler = MinMaxScaler::new()
-    .with_feature_range(-1.0, 1.0);
+let scaler = MinMaxScaler::new().with_feature_range(-1.0, 1.0);
 let fitted = scaler.fit(x_train.view())?;
-
 let x_scaled = fitted.transform(x_test.view())?;
 // 输出范围: [-1.0, 1.0]
 ```
@@ -207,13 +200,11 @@ pub struct RobustScaler<S: State = Unfitted> {
 ```rust
 use naja::preprocessing::RobustScaler;
 use naja::core::traits::{FittableTransformer, Transformer, InversibleTransformer};
-
 let scaler = RobustScaler::new()
     .with_quantile_range(0.1, 0.9)
     .with_center(true)
     .with_scale(true);
 let fitted = scaler.fit(x_train.view())?;
-
 let x_scaled = fitted.transform(x_test.view())?;
 ```
 
@@ -261,11 +252,9 @@ use naja::preprocessing::StandardScaler;
 use naja::algorithms::linrg::LinearRegression;
 use naja::pipeline::pipeline;
 use naja::core::traits::SupervisedEstimator;
-
 let preprocessor = StandardScaler::new();
 let estimator = LinearRegression::new();
 let pipe = pipeline(preprocessor, estimator);
-
 let fitted_pipe = pipe.fit_supervised(x_train.view(), y_train.view())?;
 let y_pred = fitted_pipe.predict(x_test.view())?;
 ```

@@ -21,7 +21,6 @@ ONNX 导出模块面向模型跨平台部署场景，当前处于规划中。
 ```rust
 use naja::algorithms::linrg::LinearRegression;
 use naja::io::onnx;
-
 let model = LinearRegression::new();
 let fitted = model.fit(&x_train, &y_train)?;
 onnx::save_model(&fitted, "model.onnx")?;
